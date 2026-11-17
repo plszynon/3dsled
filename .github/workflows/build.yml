@@ -1,0 +1,26 @@
+name: Build
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools
+        run: |
+          apt-get update && apt-get install -y build-essential git zlib1g-dev cmake
+          git clone --recursive https://github.com/3DSGuy/Project_CTR /tmp/ctr
+          make -C /tmp/ctr/makerom -j4
+          cp "$(find /tmp/ctr/makerom -name makerom -type f | head -1)" /usr/local/bin/makerom
+          git clone --recursive https://github.com/carstene1ns/3ds-bannertool /tmp/bt
+          cmake -S /tmp/bt -B /tmp/bt/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/bt/build -j4
+          cp /tmp/bt/build/bannertool /usr/local/bin/bannertool
+      - name: Build
+        run: make all
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ledcolor
+          path: |
+            ledcolor.cia
+            ledcolor.3dsx
